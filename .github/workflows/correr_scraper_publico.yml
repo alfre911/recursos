@@ -49,7 +49,7 @@ jobs:
                 return
 
             print(f"Subiendo {local_path} al repositorio IPTV...")
-            url = f"https://api.github.com/repos/alfre911/IPTV/contents/{target_filename}"
+            url = f"https://api.github.com/repos/alfre911/recursos/contents/{target_filename}"
             
             # Intentar obtener el SHA si el archivo ya existe
             res = requests.get(url, headers=headers)
