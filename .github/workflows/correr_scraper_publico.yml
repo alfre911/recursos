@@ -1,11 +1,11 @@
-name: Auto Actualizar Listas IPTV (Repo Público)
+name: Auto Actualizar Listas
 
 on:
   schedule:
-    # 18:05 UTC = 15:05 en Argentina (5 minutos de changüí después de la actualización)
+    # 18:05 UTC = 15:05 en Argentina
     - cron: '5 18 * * *'
-  workflow_dispatch: # Te permite ejecutarlo manualmente desde GitHub cuando quieras
-  
+  workflow_dispatch: # Permite ejecución manual
+
 jobs:
   run-scraper:
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
 
     - name: Subir resultados al Repositorio Público mediante Python API
       env:
-        TOKEN_GITHUB: ${{ secrets.MI_TOKEN_SECRETO }}
+        TOKEN_GITHUB: ${{ secrets.RECURSOS }}
       shell: python
       run: |
         import os
@@ -57,7 +57,7 @@ jobs:
             if res.status_code == 200:
                 sha = res.json().get("sha")
 
-            # Leer archivo y codificarlo en Base64 de forma segura
+            # Leer archivo y codificarlo en Base64
             with open(local_path, "rb") as f:
                 content_base64 = base64.b64encode(f.read()).decode("utf-8")
 
