@@ -1,0 +1,81 @@
+name: Auto Actualizar Listas IPTV (Repo Público)
+
+on:
+  schedule:
+    # 18:05 UTC = 15:05 en Argentina (5 minutos de changüí después de la actualización)
+    - cron: '5 18 * * *'
+  workflow_dispatch: # Te permite ejecutarlo manualmente desde GitHub cuando quieras
+  
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Clonar el repositorio
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r M3U-SCRAPER/requirements.txt
+
+    - name: Ejecutar el Scraper
+      run: |
+        python M3U-SCRAPER/scraper.py
+
+    - name: Subir resultados al Repositorio Público mediante Python API
+      env:
+        TOKEN_GITHUB: ${{ secrets.MI_TOKEN_SECRETO }}
+      shell: python
+      run: |
+        import os
+        import base64
+        import requests
+
+        token = os.environ.get("TOKEN_GITHUB")
+        headers = {
+            "Authorization": f"token {token}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+
+        def upload_file(local_path, target_filename):
+            if not os.path.exists(local_path):
+                print(f"Error: No se encontro el archivo local {local_path}")
+                return
+
+            print(f"Subiendo {local_path} al repositorio IPTV...")
+            url = f"https://api.github.com/repos/alfre911/IPTV/contents/{target_filename}"
+            
+            # Intentar obtener el SHA si el archivo ya existe
+            res = requests.get(url, headers=headers)
+            sha = None
+            if res.status_code == 200:
+                sha = res.json().get("sha")
+
+            # Leer archivo y codificarlo en Base64 de forma segura
+            with open(local_path, "rb") as f:
+                content_base64 = base64.b64encode(f.read()).decode("utf-8")
+
+            # Armar los datos para la API
+            data = {
+                "message": f"Update {target_filename} via Scraper Bot",
+                "content": content_base64
+            }
+            if sha:
+                data["sha"] = sha
+
+            # Enviar archivo
+            put_res = requests.put(url, headers=headers, json=data)
+            if put_res.status_code in [200, 201]:
+                print(f"✓ exitoso: {target_filename} subido correctamente.")
+            else:
+                print(f"❌ Error al subir {target_filename}: {put_res.status_code} - {put_res.text}")
+
+        # Ejecutar la subida para ambas listas
+        upload_file("listas/principal.m3u", "principal.m3u")
+        upload_file("listas/deportes.m3u", "deportes.m3u")
